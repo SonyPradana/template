@@ -22,6 +22,8 @@ class Generate
 
     // builder property
     private ?string $name      = null;
+    /** @var string[] */
+    private array $declare     = [];
     private ?string $namespace = null;
     /** @var string[] */
     private $uses           = [];
@@ -85,8 +87,15 @@ class Generate
 
         // scope: before
         $before = [];
-        if ($this->namespace !== null || count($this->uses) > 0) {
+
+        if ($this->namespace !== null || count($this->uses) > 0 || count($this->declare) > 0) {
             $before[] = '';
+        }
+
+        if (count($this->declare) > 0) {
+            foreach ($this->declare as $declare => $value) {
+                $before[] = "declare({$declare}={$value});\n";
+            }
         }
 
         // generte namespace
@@ -100,10 +109,13 @@ class Generate
             $before[] = '';
         }
 
-        $before = implode("\n", $before);
-
         // scope comment, generate commnet
-        $comment = $this->generateComment(0, $this->tab_indent);
+        if ('' !== ($comment = $this->generateComment(0, $this->tab_indent))) {
+            $before[] = '';
+        }
+
+        // built before
+        $before = implode("\n", $before);
 
         // genarete class rule
         $rule = $this->rule == 0
@@ -251,6 +263,26 @@ class Generate
         $this->end_with_newline = $enable;
 
         return $this;
+    }
+
+    /**
+     * Generates PHP declare directives.
+     *
+     * Supported directives:
+     * - ticks
+     * - encoding
+     * - strict_types
+     */
+    public function addDeclare(string $directive, string|int $value): self
+    {
+        $this->declare[$directive] = $value;
+
+        return $this;
+    }
+
+    public function setDeclareStrictTypes(int $level = 1): self
+    {
+        return $this->addDeclare('strict_types', $level);
     }
 
     // setter
